@@ -4,16 +4,15 @@ import os
 import json
 
 from fastapi import FastAPI
-
-# IMPORT CORRECTO
 from app.routes.system import router as system_router
 from app.routes.portfolio import router as portfolio_router
 
 app = FastAPI(title="InversionAPP API")
 
-# INCLUIR ROUTERS
+# Incluir routers
 app.include_router(system_router)
 app.include_router(portfolio_router)
+
 
 # -------------------------
 # Archivos de configuración
