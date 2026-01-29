@@ -1,15 +1,22 @@
 from fastapi import APIRouter
-from app.services.portfolio_service import (
-    portfolio_snapshot,
-    portfolio_time_series
+from app.services.portfolio_service import load_portfolio
+
+router = APIRouter(
+    prefix="/portfolio",
+    tags=["portfolio"]
 )
 
-router = APIRouter(prefix="/portfolio", tags=["portfolio"])
-
 @router.get("/snapshot")
-def snapshot():
-    return portfolio_snapshot()
+def portfolio_snapshot():
+    df = load_portfolio()
 
-@router.get("/time-series")
-def time_series():
-    return portfolio_time_series()
+    return {
+        "assets": [
+            {
+                "ticker": row["ticker"],
+                "quantity": float(row["quantity"])
+            }
+            for _, row in df.iterrows()
+        ],
+        "total_assets": len(df)
+    }
