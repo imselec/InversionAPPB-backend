@@ -1,34 +1,61 @@
-import csv
+import pandas as pd
 from pathlib import Path
 
-CSV_PATH = Path(__file__).parent.parent / "data" / "portfolio.csv"
+CSV_PATH = Path(__file__).resolve().parents[2] / "portfolio.csv"
 
 def load_portfolio():
-    """Carga tu CSV y devuelve la lista de posiciones"""
-    portfolio = []
-    with open(CSV_PATH, newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            portfolio.append({
-                "ticker": row["ticker"],
-                "shares": float(row["shares"]),
-                "price": float(row["price"]),
-                "annual_dividend": float(row["annual_dividend"])
-            })
-    return portfolio
+    if not CSV_PATH.exists():
+        return pd.DataFrame(columns=["date", "symbol", "shares", "price"])
 
+    return pd.read_csv(CSV_PATH)
 
-def calculate_yield_history():
-    """Devuelve un historial mensual de yield basado en tu CSV"""
-    portfolio = load_portfolio()
-    total_invested = sum(p["shares"] * p["price"] for p in portfolio)
-    estimated_annual_dividends = sum(p["shares"] * p["annual_dividend"] for p in portfolio)
+def portfolio_snapshot():
+    df = load_portfolio()
 
-    history = []
-    for month in range(1, 13):
-        yield_percent = round((estimated_annual_dividends / total_invested) * 100 + (month-6)*0.1, 2)
-        history.append({
-            "date": f"2025-{month:02d}",
-            "yield": yield_percent
-        })
-    return history
+    if df.empty:
+        return {
+            "total_value": 0,
+            "cash": 0,
+            "positions": []
+        }
+
+    df["value"] = df["shares"] * df["price"]
+
+    positions = (
+        df.groupby("symbol", as_index=False)
+        .agg({"shares": "sum", "value": "sum"})
+        .to_dict(orient="records")
+    )
+
+    return {
+        "total_value": round(df["value"].sum(), 2),
+        "cash": 0,
+        "positions": positions
+    }
+
+def portfolio_time_series():
+    df = load_portfolio()
+
+    if df.empty:
+        return {"series": []}
+
+    df["value"] = df["shares"] * df["price"]
+
+    series = (
+        df.groupby("date", as_index=False)["value"]
+        .sum()
+        .rename(columns={"value": "value"})
+        .to_dict(orient="records")
+    )
+
+    return {"series": series}
+
+def portfolio_history():
+    df = load_portfolio()
+
+    if df.empty:
+        return {"operations": []}
+
+    return {
+        "operations": df.to_dict(orient="records")
+    }
