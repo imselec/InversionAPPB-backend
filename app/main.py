@@ -1,12 +1,23 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-# Importar routers
-from app.routes.system import router as system_router
-from app.routes.portfolio import router as portfolio_router
+app = FastAPI()
 
-# Crear la app FastAPI
-app = FastAPI(title="InversionAPP API")
+# Configura CORS
+origins = [
+    "https://lovable.ai",        # dominio oficial de Lovable
+    "http://localhost",          # opcional para pruebas locales
+    "http://127.0.0.1"           # opcional para pruebas locales
+]
 
-# Incluir routers
-app.include_router(system_router)
-app.include_router(portfolio_router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/system/status")
+def status():
+    return {"status": "ok"}
