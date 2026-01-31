@@ -3,24 +3,17 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.env
-.env.*
 
-# Virtual environments
-venv/
+# Virtual env
 .venv/
+env/
 
-# Data / local files
-*.csv
-*.db
+# Environment variables
+.env
 
-# Logs
-*.log
+# VS Code (opcional)
+.vscode/
 
 # OS
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
-.idea/
