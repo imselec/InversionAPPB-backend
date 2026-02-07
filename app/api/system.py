@@ -1,7 +1,10 @@
 from fastapi import APIRouter
 
-router = APIRouter()
+router = APIRouter(prefix="/system", tags=["system"])
 
-@router.get("/system/status")
+@router.get("/status")
 def system_status():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "service": "inversionapp-backend"
+    }
