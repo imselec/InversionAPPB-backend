@@ -5,23 +5,18 @@ router = APIRouter()
 
 @router.get("/portfolio/time-series")
 def portfolio_time_series():
-    df = pd.read_csv("portfolio.csv", parse_dates=["date"])
+    """
+    Retorna evolución histórica del valor total del portafolio
+    """
+    df = pd.read_csv("app/portfolio.csv")
 
+    # Agrupar por fecha
     df["position_value"] = df["shares"] * df["price"]
-
-    ts = (
-        df.groupby("date")["position_value"]
-        .sum()
-        .reset_index()
-        .sort_values("date")
-    )
+    history = df.groupby("date").agg(total_value=("position_value", "sum")).reset_index()
 
     return {
-        "series": [
-            {
-                "date": d.strftime("%Y-%m-%d"),
-                "value": round(v, 2)
-            }
-            for d, v in zip(ts["date"], ts["position_value"])
+        "history": [
+            {"date": row["date"], "total_value": round(row["total_value"], 2)}
+            for _, row in history.iterrows()
         ]
     }

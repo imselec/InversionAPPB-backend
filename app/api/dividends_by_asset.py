@@ -5,21 +5,16 @@ router = APIRouter()
 
 @router.get("/portfolio/dividends-by-asset")
 def dividends_by_asset():
-    df = pd.read_csv("portfolio.csv")
+    """
+    Retorna los dividendos acumulados por cada activo
+    """
+    df = pd.read_csv("app/portfolio.csv")
 
-    divs = (
-        df.groupby("ticker")["dividend"]
-        .sum()
-        .reset_index()
-        .sort_values("dividend", ascending=False)
-    )
+    df_div = df.groupby("ticker").agg(dividends=("dividend", "sum")).reset_index()
 
     return {
         "dividends": [
-            {
-                "ticker": t,
-                "total": round(d, 2)
-            }
-            for t, d in zip(divs["ticker"], divs["dividend"])
+            {"ticker": row["ticker"], "dividends": round(row["dividends"], 2)}
+            for _, row in df_div.iterrows()
         ]
     }
