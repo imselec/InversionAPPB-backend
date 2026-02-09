@@ -2,14 +2,10 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/recommendations")
+@router.get("")
 def recommendations():
+    # Mock dinámico según tu cartera
     return [
-        {"ticker": "PEP", "score": 0.8},
-        {"ticker": "TXN", "score": 0.75},
-        {"ticker": "JPM", "score": 0.7}
+        {"ticker": "VYM", "allocation_usd": 100, "yield": 3.1, "reason": "High yield ETF", "score": 88},
+        {"ticker": "JEPI", "allocation_usd": 120, "yield": 4.0, "reason": "Monthly income via covered calls", "score": 90}
     ]
-
-@router.get("/recommendations/candidates")
-def recommendation_candidates():
-    return ["PEP", "TXN", "JPM", "CVX"]

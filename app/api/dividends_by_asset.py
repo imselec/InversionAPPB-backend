@@ -1,20 +1,20 @@
 from fastapi import APIRouter
 import pandas as pd
+import os
 
 router = APIRouter()
+CSV_PATH = os.path.join(os.path.dirname(__file__), "../../portfolio.csv")
 
-@router.get("/portfolio/dividends-by-asset")
+@router.get("/dividends-by-asset")
 def dividends_by_asset():
-    """
-    Retorna los dividendos acumulados por cada activo
-    """
-    df = pd.read_csv("app/portfolio.csv")
-
-    df_div = df.groupby("ticker").agg(dividends=("dividend", "sum")).reset_index()
-
-    return {
-        "dividends": [
-            {"ticker": row["ticker"], "dividends": round(row["dividends"], 2)}
-            for _, row in df_div.iterrows()
-        ]
-    }
+    df = pd.read_csv(CSV_PATH)
+    total_dividends = (df["shares"] * df["dividend_per_share"]).sum()
+    results = []
+    for _, row in df.iterrows():
+        annual_div = row["shares"] * row["dividend_per_share"]
+        results.append({
+            "ticker": row["symbol"],
+            "annual_dividend_usd": round(annual_div, 2),
+            "percentage_of_total": round(annual_div / total_dividends * 100, 1) if total_dividends else 0
+        })
+    return results

@@ -1,27 +1,17 @@
 from fastapi import APIRouter
 import pandas as pd
+from datetime import datetime
+import os
 
 router = APIRouter()
+CSV_PATH = os.path.join(os.path.dirname(__file__), "../../portfolio.csv")
 
-@router.get("/portfolio/yield-history")
+@router.get("/yield-history")
 def yield_history():
-    """
-    Retorna rendimiento histórico aproximado por fecha
-    """
-    df = pd.read_csv("app/portfolio.csv")
-    df["position_value"] = df["shares"] * df["price"]
-    df_group = df.groupby("date").agg(total_value=("position_value", "sum")).reset_index()
-    
-    # Calcular rendimiento relativo al primer valor
-    if not df_group.empty:
-        initial = df_group["total_value"].iloc[0]
-        df_group["yield"] = (df_group["total_value"] - initial) / initial * 100
-    else:
-        df_group["yield"] = 0
-
-    return {
-        "yield_history": [
-            {"date": row["date"], "yield_percent": round(row["yield"], 2)}
-            for _, row in df_group.iterrows()
-        ]
-    }
+    df = pd.read_csv(CSV_PATH)
+    total_value = (df["shares"] * df["price_per_share"]).sum()
+    est_dividends = (df["shares"] * df["dividend_per_share"]).sum()
+    avg_yield = (est_dividends / total_value * 100) if total_value else 0
+    return [
+        {"date": datetime.now().strftime("%Y-%m-%d"), "yield": round(avg_yield, 2)}
+    ]

@@ -1,11 +1,17 @@
 from fastapi import APIRouter
+from datetime import datetime
 
 router = APIRouter()
 
-@router.get("/history")
+@router.get("")
 def history():
     return [
-        {"date": "2026-01-01", "action": "buy", "ticker": "UPS", "amount": 0.5577},
-        {"date": "2026-01-02", "action": "buy", "ticker": "ABBV", "amount": 0.3574},
-        {"date": "2026-01-03", "action": "buy", "ticker": "LMT", "amount": 0.1966}
+        {
+            "id": "h1",
+            "run_date": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "invested_amount": 200,
+            "recommendations_count": 5,
+            "pdf_path": None,
+            "email_sent": False
+        }
     ]
