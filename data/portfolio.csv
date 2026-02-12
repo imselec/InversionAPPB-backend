@@ -1,16 +1,4 @@
-symbol,shares,price_per_share,dividend_per_share,sector
-UPS,0.5577,180,2.6,Logistics
-TXN,0.3150,190,3.5,Technology
-PG,0.6941,160,3.0,Consumer Goods
-AVGO,0.5650,700,10.0,Technology
-CVX,1.0876,160,5.2,Energy
-XOM,1.0643,110,4.8,Energy
-ABBV,0.3574,150,4.5,Healthcare
-LMT,0.2592,480,7.0,Defense
-JNJ,1.0214,160,4.0,Healthcare
-JPM,0.2303,140,3.2,Finance
-O,1.4206,70,2.9,Real Estate
-DUK,0.2092,100,3.0,Utilities
-KO,0.5996,60,1.8,Consumer Goods
-PEP,0.4824,180,4.0,Consumer Goods
-NEE,0.2875,90,2.7,Utilities
+ticker,shares,avg_price
+AVGO,1.19,850
+PG,1.95,150
+XOM,1.06,100

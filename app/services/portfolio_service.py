@@ -1,32 +1,32 @@
 from pathlib import Path
-import csv
 from typing import List, Dict
+import csv
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-
-# 👉 Ruta REAL del CSV
-CSV_PATH = BASE_DIR / "data" / "portfolio.csv"
-# si está en backend/portfolio.csv usar:
-# CSV_PATH = BASE_DIR / "portfolio.csv"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+PORTFOLIO_FILE = BASE_DIR / "portfolio.csv"
 
 
 def load_portfolio() -> List[Dict]:
-    if not CSV_PATH.exists():
-        raise FileNotFoundError(
-            f"portfolio.csv no encontrado. Ruta esperada: {CSV_PATH}"
-        )
+    """
+    Lee portfolio.csv bajo demanda.
+    No se ejecuta al importar.
+    """
+
+    if not PORTFOLIO_FILE.exists():
+        return []
 
     portfolio = []
 
-    with open(CSV_PATH, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            portfolio.append({
-                "ticker": row["ticker"].upper().strip(),
-                "shares": float(row["shares"]),
-                "avg_price": float(row.get("avg_price", 0) or 0),
-                "sector": row.get("sector", "").strip(),
-                "dividend_yield": float(row.get("dividend_yield", 0) or 0),
-            })
+    try:
+        with open(PORTFOLIO_FILE, newline="", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                portfolio.append({
+                    "ticker": row["ticker"],
+                    "shares": float(row["shares"]),
+                    "avg_price": float(row["avg_price"])
+                })
+    except Exception:
+        return []
 
     return portfolio

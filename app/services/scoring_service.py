@@ -1,8 +1,6 @@
-# app/services/scoring_service.py
-
 from typing import List, Dict
+from app.services.portfolio_service import load_portfolio
 
-# Universo permitido (sin SCHD por restricciones en España)
 INVESTMENT_UNIVERSE = [
     {"ticker": "AVGO", "sector": "Technology", "score": 92},
     {"ticker": "MSFT", "sector": "Technology", "score": 90},
@@ -15,20 +13,30 @@ INVESTMENT_UNIVERSE = [
     {"ticker": "O", "sector": "REIT", "score": 78},
 ]
 
+
 def get_ranked_candidates() -> List[Dict]:
-    """
-    Devuelve los activos ordenados por score descendente.
-    No ejecuta nada externo.
-    """
-    return sorted(INVESTMENT_UNIVERSE, key=lambda x: x["score"], reverse=True)
+    portfolio = load_portfolio()
+    owned_tickers = {p["ticker"] for p in portfolio}
+
+    adjusted = []
+
+    for asset in INVESTMENT_UNIVERSE:
+        score = asset["score"]
+
+        # Penalizar ligeramente si ya lo posees (para diversificar)
+        if asset["ticker"] in owned_tickers:
+            score -= 5
+
+        adjusted.append({
+            "ticker": asset["ticker"],
+            "sector": asset["sector"],
+            "score": score
+        })
+
+    return sorted(adjusted, key=lambda x: x["score"], reverse=True)
 
 
 def get_top_recommendations(monthly_amount: float = 200) -> Dict:
-    """
-    Genera una recomendación simple asignando el capital mensual
-    al activo con mayor score.
-    """
-
     ranked = get_ranked_candidates()
 
     if not ranked:
