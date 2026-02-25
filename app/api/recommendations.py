@@ -1,29 +1,30 @@
-# app/api/recommendations.py
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Query
-from app.services.scoring_service import (
-    get_ranked_candidates,
-    get_top_recommendations
-)
+from app.database import SessionLocal
+from app.repositories.recommendation_repository import RecommendationRepository
 
-router = APIRouter()
+router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 
 
-@router.get("/candidates")
-def candidates():
-    """
-    Devuelve todos los activos ordenados por score.
-    """
-    return {
-        "candidates": get_ranked_candidates()
-    }
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-@router.get("/monthly")
-def monthly_recommendation(
-    amount: float = Query(default=200, ge=50, le=10000)
-):
-    """
-    Devuelve la recomendación mensual.
-    """
-    return get_top_recommendations(monthly_amount=amount)
+@router.get("/runs")
+def list_runs(db: Session = Depends(get_db)):
+    return RecommendationRepository.get_runs(db)
+
+
+@router.get("/runs/{run_id}")
+def get_run(run_id: int, db: Session = Depends(get_db)):
+    result = RecommendationRepository.get_run_with_items(db, run_id)
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    return result

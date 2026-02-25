@@ -1,55 +1,51 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
+# =========================
+# Database
+# =========================
+from app.database import Base, engine
+
+# =========================
+# Importar modelos (IMPORTANTE para registrar metadata)
+# =========================
+from app.models import recommendation_run
+from app.models import recommendation_item
+from app.models import portfolio  # si ya existe
+
+# =========================
+# Crear aplicación
+# =========================
+app = FastAPI(title="InversorAPP Backend", version="2.0.0")
+from app.api import recommendations
+
+app.include_router(recommendations.router)
+
+# =========================
+# Crear tablas automáticamente (solo para entorno local)
+# =========================
+Base.metadata.create_all(bind=engine)
+
+# =========================
 # Routers
-from app.api.recommendations import router as recommendations_router
-from app.api.config import router as config_router
+# =========================
+from app.routers import recommendation_test
 
-app = FastAPI(
-    title="InversionAPP Backend",
-    version="3.0.0"
-)
+# Si tienes otros routers:
+# from app.routers import auth
+# from app.routers import config_routes
+# from app.routers import market_test
+# from app.routers import portfolio_actual
 
-# ==============================
-# CORS (Lovable / Render ready)
-# ==============================
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.include_router(recommendation_test.router)
+# app.include_router(auth.router)
+# app.include_router(config_routes.router)
+# app.include_router(market_test.router)
+# app.include_router(portfolio_actual.router)
 
-# ==============================
-# Routers
-# ==============================
-app.include_router(
-    recommendations_router,
-    prefix="/recommendations",
-    tags=["recommendations"]
-)
 
-app.include_router(
-    config_router,
-    prefix="/config",
-    tags=["config"]
-)
-
-# ==============================
-# Health Endpoints
-# ==============================
+# =========================
+# Health Check
+# =========================
 @app.get("/")
 def root():
-    return {
-        "status": "ok",
-        "service": "InversionAPP Backend",
-        "version": "3.0.0"
-    }
-
-
-@app.get("/system/status")
-def system_status():
-    return {
-        "status": "running"
-    }
+    return {"status": "ok", "message": "Backend running"}

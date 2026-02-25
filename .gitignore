@@ -1,19 +1,8 @@
-# Python
+# .gitignore
+venv_pro/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-# Virtual env
-.venv/
-env/
-
-# Environment variables
+*.db
 .env
-
-# VS Code (opcional)
-.vscode/
-
-# OS
-.DS_Store
-Thumbs.db
+.idea/
+*.sqlite

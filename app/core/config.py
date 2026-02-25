@@ -1,24 +1,23 @@
-# Inversión mensual
+# app/core/config.py
+
+# Plan mensual de inversión
 PLAN_MENSUAL_USD = 200
 
-# Activos no permitidos en España
-RESTRICTED_ES = {"SCHD", "VTI", "VOO"}
+# Restricciones para España
+RESTRICTED_ES = ["SCHD"]
+REPLACEMENTS_ES = {"SCHD": "VTI"}
 
-# Reemplazos automáticos UCITS
-REPLACEMENTS_ES = {
-    "SCHD": "SCHD.UCITS",
-    "VTI": "VUSA.L",
-    "VOO": "VUSA.L"
-}
-
-# Scoring
-SCORING_WEIGHTS = {
-    "dividend_yield": 0.7,
-    "sector_priority": {
-        "Tech": 1.0,
-        "Healthcare": 0.8,
-        "Energy": 0.6,
-        "Finance": 0.7,
-        "Other": 0.5
-    }
+# Benchmark sectorial configurable
+BENCHMARK_TARGET = {
+    "Technology": 0.27,
+    "Healthcare": 0.13,
+    "Financials": 0.11,
+    "Consumer Discretionary": 0.10,
+    "Industrials": 0.09,
+    "Energy": 0.03,
+    "Utilities": 0.03,
+    "Materials": 0.03,
+    "Real Estate": 0.02,
+    "Communication Services": 0.05,
+    "Consumer Staples": 0.14
 }

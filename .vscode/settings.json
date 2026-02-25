@@ -1,0 +1,78 @@
+{
+  // =============================
+  // PYTHON – ENTORNO Y ANÁLISIS
+  // =============================
+  "python.defaultInterpreterPath": "python",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.useLibraryCodeForTypes": true,
+  // =============================
+  // FORMATO DE CÓDIGO
+  // =============================
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [
+    "--line-length=88"
+  ],
+  // =============================
+  // IMPORTS (isort)
+  // =============================
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "python.sortImports.args": [
+    "--profile=black"
+  ],
+  // =============================
+  // LINTING (Flake8)
+  // =============================
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.linting.flake8Args": [
+    "--max-line-length=88",
+    "--extend-ignore=E203,W503"
+  ],
+  // =============================
+  // FASTAPI / UVICORN
+  // =============================
+  "python.terminal.activateEnvironment": true,
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  // =============================
+  // ARCHIVOS Y EXCLUSIONES
+  // =============================
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.venv": true,
+    "**/env": true
+  },
+  // =============================
+  // JSON / CSV / CONFIG
+  // =============================
+  "json.format.enable": true,
+  "csv-preview.separator": ",",
+  // =============================
+  // .ENV (Lovable / ngrok)
+  // =============================
+  "dotenv.enableAutocloaking": false,
+  // =============================
+  // GIT
+  // =============================
+  "git.enableSmartCommit": true,
+  "git.autofetch": true,
+  // =============================
+  // UI / PRODUCTIVIDAD
+  // =============================
+  "editor.minimap.enabled": false,
+  "editor.tabSize": 4,
+  "editor.renderWhitespace": "boundary",
+  "editor.wordWrap": "on",
+  // =============================
+  // SEGURIDAD
+  // =============================
+  "security.workspace.trust.untrustedFiles": "open",
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "python-envs.pythonProjects": []
+}
