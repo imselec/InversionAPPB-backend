@@ -1,51 +1,35 @@
 from fastapi import FastAPI
-
-# =========================
-# Database
-# =========================
 from app.database import Base, engine
-
-# =========================
-# Importar modelos (IMPORTANTE para registrar metadata)
-# =========================
-from app.models import recommendation_run
-from app.models import recommendation_item
-from app.models import portfolio  # si ya existe
-
-# =========================
-# Crear aplicación
-# =========================
-app = FastAPI(title="InversorAPP Backend", version="2.0.0")
 from app.api import recommendations
+from fastapi.middleware.cors import CORSMiddleware
 
-app.include_router(recommendations.router)
-
-# =========================
-# Crear tablas automáticamente (solo para entorno local)
-# =========================
+# Crear tablas si no existen
 Base.metadata.create_all(bind=engine)
 
-# =========================
+app = FastAPI(
+    title="InversionAPPB Backend",
+    description="Backend FastAPI para gestión de inversiones",
+    version="1.0.0",
+)
+
+# CORS (si lo necesitas)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Routers
-# =========================
-from app.routers import recommendation_test
-
-# Si tienes otros routers:
-# from app.routers import auth
-# from app.routers import config_routes
-# from app.routers import market_test
-# from app.routers import portfolio_actual
-
-app.include_router(recommendation_test.router)
-# app.include_router(auth.router)
-# app.include_router(config_routes.router)
-# app.include_router(market_test.router)
-# app.include_router(portfolio_actual.router)
+app.include_router(
+    recommendations.router, prefix="/recommendations", tags=["recommendations"]
+)
 
 
-# =========================
-# Health Check
-# =========================
-@app.get("/")
-def root():
-    return {"status": "ok", "message": "Backend running"}
+@app.get("/system/status")
+def system_status():
+    return {
+        "status": "ok",
+        "message": "Backend InversionAPPB funcionando correctamente",
+    }

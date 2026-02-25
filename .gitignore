@@ -1,8 +1,17 @@
-# .gitignore
+# Entornos virtuales
+venv/
 venv_pro/
+
+# Bases de datos locales
+*.db
+
+# Python cache
 __pycache__/
 *.pyc
-*.db
+
+# Config / entorno
 .env
-.idea/
-*.sqlite
+
+# IDE / sistema
+.vscode/
+.DS_Store
