@@ -12,12 +12,18 @@ from app.api.recommendations_candidates import (
     router as recommendations_candidates_router,
 )
 
+from app.api.dividends_by_asset import router as dividends_by_asset_router
+from app.api.alerts import router as alerts_router
+
+
 # Crear tablas
 Base.metadata.create_all(bind=engine)
 
 # Crear app
 app = FastAPI(title="InversionAPPB Backend", version="1.0.0")
 
+app.include_router(dividends_by_asset_router, prefix="/portfolio", tags=["Portfolio"])
+app.include_router(alerts_router, tags=["Alerts"])
 
 # Health check
 @app.get("/system/status")
