@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Importar routers existentes
+# Routers
 from app.api.system import router as system_router
 from app.api.portfolio_snapshot import router as portfolio_snapshot_router
 from app.api.portfolio_time_series import router as portfolio_time_series_router
@@ -16,19 +16,17 @@ from app.api.alerts import router as alerts_router
 
 app = FastAPI(title="InversionAPPB Backend")
 
-# ===== Configuración CORS =====
+# ===== CORSMiddleware =====
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*"
-    ],  # Permitir todas las URLs; puedes restringir a Lovable si quieres
+    allow_origins=["*"],  # Permitir todas las URLs
     allow_credentials=True,
-    allow_methods=["*"],  # GET, POST, OPTIONS, etc.
-    allow_headers=["*"],  # Content-Type, Authorization, etc.
+    allow_methods=["*"],  # GET, POST, OPTIONS...
+    allow_headers=["*"],  # Content-Type, Authorization...
 )
-# ==============================
+# ==========================
 
-# ===== Montar routers =====
+# ===== Routers =====
 app.include_router(system_router, prefix="/system", tags=["system"])
 app.include_router(
     portfolio_snapshot_router, prefix="/portfolio/snapshot", tags=["portfolio"]
@@ -53,10 +51,10 @@ app.include_router(
     tags=["recommendations"],
 )
 app.include_router(alerts_router, prefix="/alerts", tags=["alerts"])
-# ==========================
+# ===================
 
 
-# ===== Root opcional =====
+# ===== Root =====
 @app.get("/")
 def root():
     return {"status": "ok", "message": "Backend running with CORS enabled"}
