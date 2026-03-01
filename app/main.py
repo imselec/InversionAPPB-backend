@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.database import Base, engine
+from fastapi.middleware.cors import CORSMiddleware
 
 # Importar TODOS los routers
 from app.api.portfolio_snapshot import router as portfolio_snapshot_router
@@ -14,6 +15,17 @@ from app.api.recommendations_candidates import (
 
 from app.api.dividends_by_asset import router as dividends_by_asset_router
 from app.api.alerts import router as alerts_router
+
+app = FastAPI(title="InversionAPP Backend", version="1.0.0")
+
+# ✅ CORS FIX
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Crear tablas
