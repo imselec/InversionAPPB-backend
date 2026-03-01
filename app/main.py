@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Request
+# app/main.py
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
 
-# Routers
+# Importar routers existentes
 from app.api.system import router as system_router
 from app.api.portfolio_snapshot import router as portfolio_snapshot_router
 from app.api.portfolio_time_series import router as portfolio_time_series_router
@@ -14,76 +14,49 @@ from app.api.recommendations_candidates import (
 )
 from app.api.alerts import router as alerts_router
 
-# =========================================================
-# CREATE APP
-# =========================================================
+app = FastAPI(title="InversionAPPB Backend")
 
-app = FastAPI(title="InversionAPP Backend", version="1.0.0")
-
-# =========================================================
-# FORCE CORS — CRITICAL FOR LOVABLE
-# =========================================================
-
+# ===== Configuración CORS =====
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "*"
+    ],  # Permitir todas las URLs; puedes restringir a Lovable si quieres
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # GET, POST, OPTIONS, etc.
+    allow_headers=["*"],  # Content-Type, Authorization, etc.
 )
+# ==============================
 
-# =========================================================
-# GLOBAL OPTIONS HANDLER (FIXES 405)
-# =========================================================
-
-
-@app.options("/{full_path:path}")
-async def options_handler(request: Request, full_path: str):
-    return Response(status_code=200)
-
-
-# =========================================================
-# ROOT
-# =========================================================
-
-
-@app.get("/")
-def root():
-    return {"status": "ok", "message": "Backend running"}
-
-
-# =========================================================
-# ROUTERS
-# =========================================================
-
-app.include_router(system_router, prefix="/system", tags=["System"])
-
+# ===== Montar routers =====
+app.include_router(system_router, prefix="/system", tags=["system"])
 app.include_router(
-    portfolio_snapshot_router, prefix="/portfolio/snapshot", tags=["Portfolio"]
+    portfolio_snapshot_router, prefix="/portfolio/snapshot", tags=["portfolio"]
 )
-
 app.include_router(
-    portfolio_time_series_router, prefix="/portfolio/time-series", tags=["Portfolio"]
+    portfolio_time_series_router, prefix="/portfolio/time-series", tags=["portfolio"]
 )
-
 app.include_router(
     dividends_by_asset_router,
     prefix="/portfolio/dividends-by-asset",
-    tags=["Portfolio"],
+    tags=["portfolio"],
 )
-
 app.include_router(
-    yield_history_router, prefix="/portfolio/yield-history", tags=["Portfolio"]
+    yield_history_router, prefix="/portfolio/yield-history", tags=["portfolio"]
 )
-
 app.include_router(
-    recommendations_router, prefix="/recommendations", tags=["Recommendations"]
+    recommendations_router, prefix="/recommendations", tags=["recommendations"]
 )
-
 app.include_router(
     recommendations_candidates_router,
     prefix="/recommendations/candidates",
-    tags=["Recommendations"],
+    tags=["recommendations"],
 )
+app.include_router(alerts_router, prefix="/alerts", tags=["alerts"])
+# ==========================
 
-app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
+
+# ===== Root opcional =====
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "Backend running with CORS enabled"}
