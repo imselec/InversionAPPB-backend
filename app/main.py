@@ -1,59 +1,81 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# routers
+# Routers
 from app.api.system import router as system_router
 from app.api.portfolio_snapshot import router as portfolio_snapshot_router
 from app.api.portfolio_time_series import router as portfolio_time_series_router
-from app.api.dividends_by_asset import router as dividends_router
+from app.api.dividends_by_asset import router as dividends_by_asset_router
 from app.api.yield_history import router as yield_history_router
 from app.api.recommendations import router as recommendations_router
-from app.api.recommendations_candidates import router as candidates_router
+from app.api.recommendations_candidates import (
+    router as recommendations_candidates_router,
+)
 from app.api.alerts import router as alerts_router
 
+# Crear app
+app = FastAPI(title="InversionAPP Backend", version="1.0.0")
 
-# CREATE APP
-app = FastAPI(title="InversionAPP Backend")
-
-
-# ===== CRITICAL: CORS MUST BE HERE =====
-
+# =========================================================
+# CORS CONFIGURATION — NECESARIO PARA LOVABLE Y BROWSER
+# =========================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # permitir cualquier frontend (Lovable, local, etc)
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],  # permitir GET, POST, OPTIONS, etc
     allow_headers=["*"],
 )
 
 
-# ===== ROOT =====
-
-
+# =========================================================
+# ROOT ENDPOINT
+# =========================================================
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "Backend running"}
+    return {"status": "ok", "message": "InversionAPP Backend running"}
 
 
-# ===== SYSTEM =====
+# =========================================================
+# SYSTEM
+# =========================================================
+app.include_router(system_router, prefix="/system", tags=["System"])
 
-app.include_router(system_router, prefix="/system")
+# =========================================================
+# PORTFOLIO
+# =========================================================
+app.include_router(
+    portfolio_snapshot_router, prefix="/portfolio/snapshot", tags=["Portfolio"]
+)
 
+app.include_router(
+    portfolio_time_series_router, prefix="/portfolio/time-series", tags=["Portfolio"]
+)
 
-# ===== PORTFOLIO =====
+app.include_router(
+    dividends_by_asset_router,
+    prefix="/portfolio/dividends-by-asset",
+    tags=["Portfolio"],
+)
 
-app.include_router(portfolio_snapshot_router, prefix="/portfolio/snapshot")
-app.include_router(portfolio_time_series_router, prefix="/portfolio/time-series")
-app.include_router(dividends_router, prefix="/portfolio/dividends-by-asset")
-app.include_router(yield_history_router, prefix="/portfolio/yield-history")
+app.include_router(
+    yield_history_router, prefix="/portfolio/yield-history", tags=["Portfolio"]
+)
 
+# =========================================================
+# RECOMMENDATIONS
+# =========================================================
+app.include_router(
+    recommendations_router, prefix="/recommendations", tags=["Recommendations"]
+)
 
-# ===== RECOMMENDATIONS =====
+app.include_router(
+    recommendations_candidates_router,
+    prefix="/recommendations/candidates",
+    tags=["Recommendations"],
+)
 
-app.include_router(recommendations_router, prefix="/recommendations")
-app.include_router(candidates_router, prefix="/recommendations/candidates")
-
-
-# ===== ALERTS =====
-
-app.include_router(alerts_router, prefix="/alerts")
+# =========================================================
+# ALERTS
+# =========================================================
+app.include_router(alerts_router, prefix="/alerts", tags=["Alerts"])
