@@ -1,8 +1,7 @@
-# app/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-# Routers
 from app.api.system import router as system_router
 from app.api.portfolio_snapshot import router as portfolio_snapshot_router
 from app.api.portfolio_time_series import router as portfolio_time_series_router
@@ -14,19 +13,33 @@ from app.api.recommendations_candidates import (
 )
 from app.api.alerts import router as alerts_router
 
-app = FastAPI(title="InversionAPPB Backend")
+app = FastAPI(title="InversionAPPB Backend", version="1.0.0")
 
-# ===== CORSMiddleware =====
+# =========================
+# CORS CORRECTO
+# =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permitir todas las URLs
+    allow_origins=["*"],  # IMPORTANTE: no dejar vacío
     allow_credentials=True,
-    allow_methods=["*"],  # GET, POST, OPTIONS...
-    allow_headers=["*"],  # Content-Type, Authorization...
+    allow_methods=["*"],  # IMPORTANTE: no dejar vacío
+    allow_headers=["*"],
 )
-# ==========================
 
-# ===== Routers =====
+
+# =========================
+# Middleware para OPTIONS
+# =========================
+@app.middleware("http")
+async def handle_options(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return JSONResponse(status_code=200, content={})
+    return await call_next(request)
+
+
+# =========================
+# Routers
+# =========================
 app.include_router(system_router, prefix="/system", tags=["system"])
 app.include_router(
     portfolio_snapshot_router, prefix="/portfolio/snapshot", tags=["portfolio"]
@@ -51,10 +64,8 @@ app.include_router(
     tags=["recommendations"],
 )
 app.include_router(alerts_router, prefix="/alerts", tags=["alerts"])
-# ===================
 
 
-# ===== Root =====
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "Backend running with CORS enabled"}
+    return {"status": "ok", "message": "Backend running with CORS fully enabled"}
