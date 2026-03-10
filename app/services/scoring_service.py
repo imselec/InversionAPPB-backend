@@ -1,23 +1,32 @@
-from typing import List, Dict
-from app.core.portfolio_loader import load_portfolio
+class ScoringService:
 
-PLAN_MENSUAL_USD = 200
+    def compute_score(self, prices, dividends, valuation, volatility):
 
-def calculate_monthly_allocation() -> List[Dict]:
-    portfolio = load_portfolio()
+        scores = {}
 
-    weight = 1 / len(portfolio)
+        for ticker in prices:
 
-    results = []
-    for asset in portfolio:
-        allocation = PLAN_MENSUAL_USD * weight
+            score = 0
 
-        results.append({
-            "ticker": asset["ticker"],
-            "weight": round(weight, 3),
-            "allocation_usd": round(allocation, 2),
-            "shares_to_buy": 0,
-            "buy_signal": True
-        })
+            dividend_yield = dividends.get(ticker, {}).get("yield", 0)
+            payout = dividends.get(ticker, {}).get("payout", 0)
+            pe = valuation.get(ticker, 0)
+            vol = volatility.get(ticker, 0)
 
-    return results
+            # Dividend yield
+            score += dividend_yield * 40
+
+            # payout ratio saludable
+            if payout and payout < 0.65:
+                score += 20
+
+            # valoración
+            if pe and pe < 20:
+                score += 20
+
+            # penalización por volatilidad
+            score -= vol * 2
+
+            scores[ticker] = round(score, 2)
+
+        return scores

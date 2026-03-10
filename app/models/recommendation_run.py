@@ -1,5 +1,8 @@
-from sqlalchemy import Column, Integer, Float, DateTime, JSON
-from sqlalchemy.sql import func
+# app/models/recommendation_run.py
+
+from sqlalchemy import Column, Integer, Float, DateTime
+from sqlalchemy.orm import relationship
+from datetime import datetime
 from app.database import Base
 
 
@@ -8,5 +11,10 @@ class RecommendationRun(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     capital = Column(Float, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    config_snapshot = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    items = relationship(
+        "RecommendationItem",
+        back_populates="run",
+        cascade="all, delete-orphan"
+    )

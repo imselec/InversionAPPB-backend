@@ -1,11 +1,19 @@
 {
   "monthly_investment": 300,
-  "benchmark": {
-    "Technology": 25.0,
-    "Healthcare": 15.0,
-    "Financials": 14.0,
-    "Consumer Defensive": 8.0,
-    "Energy": 5.0,
-    "REIT": 3.0
+
+  "scoring_weights": {
+    "yield": 0.35,
+    "momentum": 0.25,
+    "volatility": 0.15,
+    "dividend_growth": 0.25
+  },
+
+  "portfolio_rules": {
+    "max_position": 0.12,
+    "min_position": 0.03
+  },
+
+  "filters": {
+    "exclude_tickers": ["SCHD"]
   }
 }
