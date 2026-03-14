@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Hypothesis test cache
+.hypothesis/
+
+# Pytest
+.pytest_cache/
+*.pytest_cache
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Render
+render.yaml
+
+# Misc
+prueba.py
+test_analytics_endpoints.py
+app/test_api.py
+app/services/test_new_ticker_discovery_integration.py
+app/services/test_new_ticker_discovery_service.py
