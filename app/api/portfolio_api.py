@@ -1,9 +1,10 @@
 """
 Portfolio API endpoints.
 """
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
 from pydantic import BaseModel
+import traceback
 from app.services.portfolio_service import (
     get_portfolio_snapshot,
     get_dashboard,
@@ -33,7 +34,10 @@ def portfolio_snapshot():
 @router.get("/dashboard")
 def portfolio_dashboard():
     """Get dashboard summary data."""
-    return get_dashboard()
+    try:
+        return get_dashboard()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}")
 
 
 @router.get("/allocation")
