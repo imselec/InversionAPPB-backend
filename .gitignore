@@ -46,8 +46,6 @@ Thumbs.db
 # Logs
 *.log
 
-# Render
-render.yaml
 
 # Misc
 prueba.py
