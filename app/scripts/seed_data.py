@@ -95,11 +95,16 @@ def seed_settings():
     conn.close()
 
 
+def seed_all():
+    """Run all seed functions. Safe to call on every startup."""
+    seed_portfolio()
+    seed_settings()
+
+
 def main():
     """Run all seed functions."""
     print("Starting database seeding...")
-    seed_portfolio()
-    seed_settings()
+    seed_all()
     print("Database seeding completed!")
 
 

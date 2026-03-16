@@ -11,10 +11,15 @@ from app.api.alerts_api import router as alerts_router
 from app.api.notifications_api import router as notifications_router
 from app.api.watchlist_api import router as watchlist_router
 from app.scheduler import start_scheduler, stop_scheduler
+from app.database import init_database
+from app.scripts.seed_data import seed_all
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize DB schema and seed data on every startup
+    init_database()
+    seed_all()
     start_scheduler()
     yield
     stop_scheduler()
