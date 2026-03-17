@@ -25,6 +25,11 @@ class TransactionRequest(BaseModel):
     notes: Optional[str] = None
 
 
+class HoldingUpdateRequest(BaseModel):
+    shares: float
+    avg_price: Optional[float] = None
+
+
 @router.get("/snapshot")
 def portfolio_snapshot():
     """Get current portfolio snapshot with prices and values."""
@@ -69,3 +74,39 @@ def create_transaction(request: TransactionRequest):
         notes=request.notes
     )
     return result
+
+
+@router.put("/holding/{ticker}")
+def update_holding(ticker: str, request: HoldingUpdateRequest):
+    """Directly update shares and avg_price for a holding (manual correction)."""
+    from app.database import get_connection
+    from datetime import datetime
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM portfolio WHERE ticker = ?", (ticker.upper(),))
+    existing = cursor.fetchone()
+    if existing:
+        cursor.execute(
+            "UPDATE portfolio SET shares = ?, avg_price = ?, last_updated = ? WHERE ticker = ?",
+            (request.shares, request.avg_price, datetime.now(), ticker.upper())
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO portfolio (ticker, shares, avg_price, last_updated) VALUES (?, ?, ?, ?)",
+            (ticker.upper(), request.shares, request.avg_price, datetime.now())
+        )
+    conn.commit()
+    conn.close()
+    return {"ticker": ticker.upper(), "shares": request.shares, "avg_price": request.avg_price}
+
+
+@router.delete("/holding/{ticker}")
+def delete_holding(ticker: str):
+    """Remove a holding from the portfolio."""
+    from app.database import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM portfolio WHERE ticker = ?", (ticker.upper(),))
+    conn.commit()
+    conn.close()
+    return {"deleted": ticker.upper()}
