@@ -168,26 +168,29 @@ class DividendService:
         """Import last 2 years of dividend history from yfinance for all
         portfolio tickers. Skips duplicates by payment_date+ticker."""
         import yfinance as yf
+        from datetime import timedelta
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT ticker, shares FROM portfolio")
         holdings = {r['ticker']: r['shares'] for r in cursor.fetchall()}
         imported = 0
         skipped = 0
+        errors = 0
+        cutoff = (datetime.now() - timedelta(days=730)).strftime('%Y-%m-%d')
         for ticker, shares in holdings.items():
             try:
                 stock = yf.Ticker(ticker)
-                divs = stock.dividends  # pandas Series indexed by date
-                if divs is None or len(divs) == 0:
+                # Use history() which is more reliable than .dividends
+                hist = stock.history(period="2y", actions=True)
+                if hist is None or hist.empty or 'Dividends' not in hist.columns:
                     continue
-                # Only last 2 years
-                from datetime import timedelta
-                cutoff = datetime.now() - timedelta(days=730)
-                recent = divs[divs.index >= cutoff.strftime('%Y-%m-%d')]
-                for date, per_share in recent.items():
+                div_series = hist['Dividends']
+                div_series = div_series[div_series > 0]
+                for date, per_share in div_series.items():
                     date_str = str(date)[:10]
+                    if date_str < cutoff:
+                        continue
                     amount = round(float(per_share) * shares, 4)
-                    # Check duplicate
                     cursor.execute(
                         "SELECT id FROM dividend_payments "
                         "WHERE ticker=? AND payment_date=?",
@@ -200,15 +203,15 @@ class DividendService:
                         INSERT INTO dividend_payments
                         (ticker, payment_date, amount, shares_owned,
                          per_share_amount, reinvested)
-                        VALUES (?, ?, ?, ?, ?, 0)
-                    """, (ticker, date_str, amount, shares,
-                          float(per_share)))
+                        VALUES (?, ?, ?, ?, ?, 1)
+                    """, (ticker, date_str, amount, shares, float(per_share)))
                     imported += 1
             except Exception:
+                errors += 1
                 continue
         conn.commit()
         conn.close()
-        return {"imported": imported, "skipped": skipped}
+        return {"imported": imported, "skipped": skipped, "errors": errors}
 
     def record_manual_dividend(
         self,

@@ -13,11 +13,10 @@ from datetime import datetime
 
 
 def seed_portfolio():
-    """Seed portfolio with 18 current holdings."""
+    """Seed portfolio with current holdings. Updates shares if already seeded."""
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # Current holdings as of 04/03/26
+
     holdings = [
         ("AVGO", 1.3792),
         ("PG", 1.9549),
@@ -39,25 +38,20 @@ def seed_portfolio():
         ("RTX", 0.2415),
         ("CAT", 0.1099),
     ]
-    
-    # Check if portfolio already has data
-    cursor.execute("SELECT COUNT(*) FROM portfolio")
-    count = cursor.fetchone()[0]
-    
-    if count > 0:
-        print(f"Portfolio already has {count} holdings. Skipping seed.")
-        conn.close()
-        return
-    
-    # Insert holdings
+
     for ticker, shares in holdings:
-        cursor.execute("""
-            INSERT INTO portfolio (ticker, shares, avg_price, current_price, last_updated)
-            VALUES (?, ?, NULL, NULL, ?)
-        """, (ticker, shares, datetime.now()))
-    
+        cursor.execute("SELECT id FROM portfolio WHERE ticker = ?", (ticker,))
+        if cursor.fetchone():
+            # Already exists — do NOT overwrite user edits
+            pass
+        else:
+            cursor.execute("""
+                INSERT INTO portfolio (ticker, shares, avg_price, current_price, last_updated)
+                VALUES (?, ?, NULL, NULL, ?)
+            """, (ticker, shares, datetime.now()))
+
     conn.commit()
-    print(f"Seeded {len(holdings)} portfolio holdings successfully!")
+    print(f"Portfolio seed complete ({len(holdings)} tickers checked).")
     conn.close()
 
 

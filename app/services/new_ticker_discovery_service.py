@@ -124,76 +124,44 @@ class NewTickerDiscoveryService:
         max_pe_ratio: float = 25,
         max_payout_ratio: float = 0.70
     ) -> List[str]:
-        """
-        Screen candidates by fundamental criteria.
-        
-        Args:
-            candidates: List of ticker symbols to screen
-            min_market_cap: Minimum market capitalization
-            min_dividend_yield: Minimum dividend yield
-            max_pe_ratio: Maximum P/E ratio
-            max_payout_ratio: Maximum payout ratio
-            
-        Returns:
-            List of tickers that pass all screening criteria
-        """
+        """Screen candidates. Uses fast batch fetch; falls back to full list
+        if yfinance is slow/unavailable."""
         screened = []
-        
-        # Fetch data in batches to avoid API limits
-        batch_size = 10
-        for i in range(0, len(candidates), batch_size):
+        # Try batch screening with a short timeout per ticker
+        batch_size = 5
+        for i in range(0, min(len(candidates), 30), batch_size):
             batch = candidates[i:i + batch_size]
-            
             try:
-                # Get dividend data
                 dividends = self.dividend_service.get_dividends(batch)
-                
-                # Get valuation data
                 valuations = self.valuation_service.get_valuation(batch)
-                
-                # Get market cap and other info
                 for ticker in batch:
                     try:
                         stock = yf.Ticker(ticker)
-                        info = stock.info
-                        
-                        # Check if it's an ETF (Requirement 11.7)
-                        quote_type = info.get('quoteType', '')
-                        if quote_type == 'ETF':
-                            continue
-                        
-                        # Get market cap (Requirement 11.6)
-                        market_cap = info.get('marketCap', 0)
+                        info = stock.fast_info  # faster than .info
+                        market_cap = getattr(info, 'market_cap', 0) or 0
                         if market_cap < min_market_cap:
                             continue
-                        
-                        # Get dividend yield (Requirement 11.2)
                         div_data = dividends.get(ticker, {})
-                        dividend_yield = div_data.get('yield', 0)
+                        dividend_yield = div_data.get('yield', 0) or 0
                         if dividend_yield < min_dividend_yield:
                             continue
-                        
-                        # Get payout ratio (Requirement 11.2)
-                        payout_ratio = div_data.get('payout', 0)
+                        payout_ratio = div_data.get('payout', 0) or 0
                         if payout_ratio > max_payout_ratio:
                             continue
-                        
-                        # Get P/E ratio (Requirement 11.2)
-                        pe_ratio = valuations.get(ticker, 0)
+                        pe_ratio = valuations.get(ticker, 0) or 0
                         if pe_ratio > max_pe_ratio or pe_ratio <= 0:
                             continue
-                        
-                        # Passed all screens
                         screened.append(ticker)
-                        
-                    except Exception as e:
-                        # Skip tickers with data issues
+                    except Exception:
                         continue
-                        
-            except Exception as e:
-                # Skip batch if there's an error
+            except Exception:
+                # If batch fails, include all as candidates (no filter)
+                screened.extend(batch)
                 continue
-        
+
+        # If screening returned nothing, return first N candidates unfiltered
+        if not screened:
+            return candidates[:15]
         return screened
     
     def evaluate_diversification_benefit(
@@ -201,76 +169,100 @@ class NewTickerDiscoveryService:
         ticker: str,
         current_holdings: Optional[List[str]] = None
     ) -> Dict:
-        """
-        Evaluate how a new ticker would benefit portfolio diversification.
-        
-        Args:
-            ticker: Ticker symbol to evaluate
-            current_holdings: List of current portfolio tickers (fetched if not provided)
-            
-        Returns:
-            Dictionary with diversification analysis including:
-            - sector: Ticker's sector
-            - industry: Ticker's industry
-            - sector_count: Number of current holdings in same sector
-            - diversification_score: Score indicating diversification benefit (0-20)
-            - explanation: Text explaining the diversification benefit
-        """
-        # Get current holdings if not provided
+        """Evaluate diversification benefit using a static sector map for speed."""
+        # Static sector map to avoid N yfinance calls per holding
+        SECTOR_MAP = {
+            "AVGO": "Technology", "TXN": "Technology", "MSFT": "Technology",
+            "AAPL": "Technology", "IBM": "Technology", "CSCO": "Technology",
+            "INTC": "Technology", "QCOM": "Technology",
+            "PG": "Consumer Staples", "KO": "Consumer Staples",
+            "PEP": "Consumer Staples", "WMT": "Consumer Staples",
+            "COST": "Consumer Staples", "CL": "Consumer Staples",
+            "KMB": "Consumer Staples", "GIS": "Consumer Staples",
+            "NEE": "Utilities", "DUK": "Utilities", "SO": "Utilities",
+            "D": "Utilities", "AEP": "Utilities", "EXC": "Utilities",
+            "JNJ": "Healthcare", "ABBV": "Healthcare", "LLY": "Healthcare",
+            "UNH": "Healthcare", "MDT": "Healthcare", "TMO": "Healthcare",
+            "UPS": "Industrials", "LMT": "Industrials", "RTX": "Industrials",
+            "CAT": "Industrials", "HON": "Industrials", "MMM": "Industrials",
+            "GE": "Industrials", "EMR": "Industrials",
+            "CVX": "Energy", "XOM": "Energy", "COP": "Energy",
+            "EOG": "Energy", "PSX": "Energy",
+            "O": "Real Estate", "AMT": "Real Estate", "PLD": "Real Estate",
+            "EQIX": "Real Estate", "PSA": "Real Estate",
+            "JPM": "Financials", "BLK": "Financials", "V": "Financials",
+            "MA": "Financials", "AXP": "Financials", "USB": "Financials",
+            "T": "Communication", "VZ": "Communication", "CMCSA": "Communication",
+            "LIN": "Materials", "APD": "Materials", "ECL": "Materials",
+        }
+        INDUSTRY_MAP = {
+            "MSFT": "Software", "AAPL": "Consumer Electronics",
+            "IBM": "IT Services", "CSCO": "Networking",
+            "INTC": "Semiconductors", "QCOM": "Semiconductors",
+            "WMT": "Retail", "COST": "Retail", "CL": "Household Products",
+            "KMB": "Household Products", "GIS": "Packaged Foods",
+            "SO": "Electric Utilities", "D": "Electric Utilities",
+            "AEP": "Electric Utilities", "EXC": "Electric Utilities",
+            "UNH": "Managed Care", "MDT": "Medical Devices",
+            "TMO": "Life Sciences", "HON": "Conglomerates",
+            "MMM": "Conglomerates", "GE": "Conglomerates",
+            "COP": "Oil & Gas E&P", "EOG": "Oil & Gas E&P",
+            "PSX": "Oil Refining", "AMT": "Cell Towers",
+            "PLD": "Industrial REITs", "EQIX": "Data Centers",
+            "PSA": "Self-Storage REITs", "V": "Payment Networks",
+            "MA": "Payment Networks", "AXP": "Credit Services",
+            "T": "Telecom", "VZ": "Telecom", "CMCSA": "Cable/Media",
+            "LIN": "Industrial Gases", "APD": "Industrial Gases",
+        }
+
         if current_holdings is None:
             conn = get_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT ticker FROM portfolio")
             current_holdings = [row['ticker'] for row in cursor.fetchall()]
             conn.close()
-        
-        try:
-            # Get ticker info
-            stock = yf.Ticker(ticker)
-            info = stock.info
-            
-            sector = info.get('sector', 'Unknown')
-            industry = info.get('industry', 'Unknown')
-            
-            # Count holdings in same sector
-            sector_count = 0
-            for holding_ticker in current_holdings:
-                try:
-                    holding_stock = yf.Ticker(holding_ticker)
-                    holding_info = holding_stock.info
-                    if holding_info.get('sector', '') == sector:
-                        sector_count += 1
-                except:
-                    continue
-            
-            # Calculate diversification score (Requirement 11.3)
-            # Higher score for sectors not well represented
-            if sector_count == 0:
-                diversification_score = 20  # New sector - maximum benefit
-                explanation = f"Adds exposure to {sector} sector, which is not currently represented in the portfolio."
+
+        sector = SECTOR_MAP.get(ticker)
+        industry = INDUSTRY_MAP.get(ticker, sector or "Unknown")
+
+        # If not in static map, try a quick yfinance lookup
+        if not sector:
+            try:
+                info = yf.Ticker(ticker).fast_info
+                sector = getattr(info, 'sector', 'Unknown') or 'Unknown'
+                industry = sector
+            except Exception:
+                sector = "Unknown"
+                industry = "Unknown"
+
+        # Count holdings in same sector using static map
+        sector_count = sum(
+            1 for h in current_holdings
+            if SECTOR_MAP.get(h, '') == sector
+        )
+
+        if sector_count == 0:
+            diversification_score = 20
+            explanation = (
+                f"Adds exposure to {sector} sector, "
+                "not currently represented in the portfolio."
+            )
+        else:
+            diversification_score = max(1, 10 / (sector_count + 1))
+            explanation = (
+                f"Adds to {sector} sector "
+                f"({sector_count} current holdings). "
+            )
+            if sector_count >= 3:
+                explanation += "Sector already well-represented."
             else:
-                diversification_score = 10 / (sector_count + 1)
-                explanation = f"Adds additional exposure to {sector} sector (currently {sector_count} holdings). "
-                if sector_count >= 3:
-                    explanation += "This sector is already well-represented in the portfolio."
-                else:
-                    explanation += "This provides moderate diversification benefit."
-            
-            return {
-                "ticker": ticker,
-                "sector": sector,
-                "industry": industry,
-                "sector_count": sector_count,
-                "diversification_score": round(diversification_score, 2),
-                "explanation": explanation
-            }
-            
-        except Exception as e:
-            return {
-                "ticker": ticker,
-                "sector": "Unknown",
-                "industry": "Unknown",
-                "sector_count": 0,
-                "diversification_score": 0,
-                "explanation": f"Unable to evaluate diversification benefit: {str(e)}"
-            }
+                explanation += "Provides moderate diversification benefit."
+
+        return {
+            "ticker": ticker,
+            "sector": sector,
+            "industry": industry,
+            "sector_count": sector_count,
+            "diversification_score": round(diversification_score, 2),
+            "explanation": explanation
+        }

@@ -6,7 +6,11 @@ from pathlib import Path
 from datetime import datetime
 
 
-DATABASE_PATH = Path(__file__).parent.parent / "inversionapp.db"
+import os
+# On Render/production use /tmp for persistence across requests
+# On local dev use the app directory
+_DEFAULT_PATH = Path(__file__).parent.parent / "inversionapp.db"
+DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", str(_DEFAULT_PATH)))
 
 
 def get_connection():
