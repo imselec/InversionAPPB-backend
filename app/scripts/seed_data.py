@@ -13,45 +13,59 @@ from datetime import datetime
 
 
 def seed_portfolio():
-    """Seed portfolio with current holdings. Updates shares if already seeded."""
+    """Seed portfolio from CSV. Only inserts tickers not already in DB.
+    CSV is updated by the app when user edits holdings, so it acts as
+    persistent storage across Render restarts."""
+    import csv as csv_module
+    import os
     conn = get_connection()
     cursor = conn.cursor()
 
-    holdings = [
-        ("AVGO", 1.3792),
-        ("PG", 1.9549),
-        ("NEE", 2.4958),
-        ("JNJ", 1.2209),
-        ("UPS", 0.5577),
-        ("TXN", 0.8946),
-        ("CVX", 1.0876),
-        ("XOM", 1.0643),
-        ("ABBV", 0.3574),
-        ("LMT", 0.2592),
-        ("O", 1.4255),
-        ("JPM", 0.7534),
-        ("DUK", 0.2092),
-        ("KO", 0.5996),
-        ("PEP", 0.4824),
-        ("BLK", 0.1956),
-        ("LLY", 0.198),
-        ("RTX", 0.2415),
-        ("CAT", 0.1099),
-    ]
+    csv_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "data", "portfolio.csv"
+    )
 
-    for ticker, shares in holdings:
+    holdings = []
+    if os.path.exists(csv_path):
+        with open(csv_path, newline="") as f:
+            reader = csv_module.DictReader(f)
+            for row in reader:
+                try:
+                    ticker = row["ticker"].strip().upper()
+                    shares = float(row["shares"])
+                    avg_price = float(row.get("avg_price", "") or 0) or None
+                    holdings.append((ticker, shares, avg_price))
+                except (ValueError, KeyError):
+                    continue
+
+    if not holdings:
+        # Fallback hardcoded defaults
+        holdings = [
+            ("AVGO", 1.3792, None), ("PG", 1.9549, None),
+            ("NEE", 2.4958, None), ("JNJ", 1.2209, None),
+            ("UPS", 0.5577, None), ("TXN", 0.8946, None),
+            ("CVX", 1.0876, None), ("XOM", 1.0643, None),
+            ("ABBV", 0.3574, None), ("LMT", 0.2592, None),
+            ("O", 1.4255, None), ("JPM", 0.7534, None),
+            ("DUK", 0.2092, None), ("KO", 0.5996, None),
+            ("PEP", 0.4824, None), ("BLK", 0.1956, None),
+            ("LLY", 0.198, None), ("RTX", 0.2415, None),
+            ("CAT", 0.1099, None),
+        ]
+
+    inserted = 0
+    for ticker, shares, avg_price in holdings:
         cursor.execute("SELECT id FROM portfolio WHERE ticker = ?", (ticker,))
-        if cursor.fetchone():
-            # Already exists — do NOT overwrite user edits
-            pass
-        else:
+        if not cursor.fetchone():
             cursor.execute("""
                 INSERT INTO portfolio (ticker, shares, avg_price, current_price, last_updated)
-                VALUES (?, ?, NULL, NULL, ?)
-            """, (ticker, shares, datetime.now()))
+                VALUES (?, ?, ?, NULL, ?)
+            """, (ticker, shares, avg_price, datetime.now()))
+            inserted += 1
 
     conn.commit()
-    print(f"Portfolio seed complete ({len(holdings)} tickers checked).")
+    print(f"Portfolio seed: {inserted} new tickers inserted, {len(holdings)-inserted} already existed.")
     conn.close()
 
 

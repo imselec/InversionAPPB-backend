@@ -7,8 +7,8 @@ from datetime import datetime
 
 
 import os
-# On Render/production use /tmp for persistence across requests
-# On local dev use the app directory
+# On Render/production: use /tmp which persists between requests in the same instance
+# DATABASE_PATH env var can override (set to /tmp/inversionapp.db on Render)
 _DEFAULT_PATH = Path(__file__).parent.parent / "inversionapp.db"
 DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", str(_DEFAULT_PATH)))
 

@@ -81,6 +81,7 @@ def update_holding(ticker: str, request: HoldingUpdateRequest):
     """Directly update shares and avg_price for a holding (manual correction)."""
     from app.database import get_connection
     from datetime import datetime
+    import csv, os
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM portfolio WHERE ticker = ?", (ticker.upper(),))
@@ -97,6 +98,8 @@ def update_holding(ticker: str, request: HoldingUpdateRequest):
         )
     conn.commit()
     conn.close()
+    # Persist changes to CSV so they survive restarts
+    _sync_portfolio_to_csv()
     return {"ticker": ticker.upper(), "shares": request.shares, "avg_price": request.avg_price}
 
 
@@ -109,4 +112,29 @@ def delete_holding(ticker: str):
     cursor.execute("DELETE FROM portfolio WHERE ticker = ?", (ticker.upper(),))
     conn.commit()
     conn.close()
+    # Persist changes to CSV so they survive restarts
+    _sync_portfolio_to_csv()
     return {"deleted": ticker.upper()}
+
+
+def _sync_portfolio_to_csv():
+    """Write current DB portfolio state back to CSV for persistence across restarts."""
+    import csv, os
+    from app.database import get_connection
+    csv_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "data", "portfolio.csv"
+    )
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ticker, shares, avg_price FROM portfolio ORDER BY ticker")
+        rows = cursor.fetchall()
+        conn.close()
+        with open(csv_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["ticker", "shares", "avg_price"])
+            for row in rows:
+                writer.writerow([row["ticker"], row["shares"], row["avg_price"] or ""])
+    except Exception as e:
+        print(f"Warning: could not sync portfolio to CSV: {e}")
