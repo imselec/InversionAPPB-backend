@@ -99,7 +99,7 @@ async def get_alerts():
     """
     try:
         alerts = alert_service.get_user_alerts(user_id=DEFAULT_USER_ID)
-        return {"alerts": alerts, "count": len(alerts)}
+        return alerts
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching alerts: {str(e)}")
 
@@ -124,12 +124,7 @@ async def get_notification_history(
             user_id=DEFAULT_USER_ID, limit=limit + offset
         )
         paginated = history[offset: offset + limit]
-        return {
-            "history": paginated,
-            "count": len(paginated),
-            "limit": limit,
-            "offset": offset,
-        }
+        return paginated
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching notification history: {str(e)}")
 

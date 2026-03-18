@@ -76,7 +76,7 @@ async def get_watchlist():
         items = watchlist_service.get_watchlist_metrics(
             user_id=DEFAULT_USER_ID
         )
-        return {"watchlist": items, "count": len(items)}
+        return items
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -95,7 +95,7 @@ async def get_prioritized_watchlist():
         items = watchlist_service.get_prioritized_watchlist(
             user_id=DEFAULT_USER_ID
         )
-        return {"watchlist": items, "count": len(items)}
+        return items
     except Exception as e:
         raise HTTPException(
             status_code=500,
