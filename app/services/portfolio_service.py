@@ -152,21 +152,28 @@ def get_dashboard():
 
 
 def get_allocation():
-    """Get portfolio allocation percentages."""
+    """
+    Get portfolio allocation as flat array with target_pct and deviation.
+    Frontend (RebalancingAlerts) expects:
+      [{ticker, allocation_pct, target_pct, deviation, value}, ...]
+    """
     snapshot = get_portfolio_snapshot()
-    
+    positions = snapshot["positions"]
+    n = len(positions)
+    target_pct = round(100.0 / n, 4) if n > 0 else 0
+
     allocations = []
-    for position in snapshot["positions"]:
+    for position in positions:
+        alloc = position["allocation_pct"]
         allocations.append({
             "ticker": position["ticker"],
-            "allocation_pct": position["allocation_pct"],
+            "allocation_pct": alloc,
+            "target_pct": target_pct,
+            "deviation": round(alloc - target_pct, 4),
             "value": position["value"]
         })
-    
-    return {
-        "total_value": snapshot["total_value"],
-        "allocations": allocations
-    }
+
+    return allocations
 
 
 def get_transaction_history(

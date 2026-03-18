@@ -74,48 +74,59 @@ class RecommendationEngine:
         # Sort by score
         sorted_tickers = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         
-        # Allocate budget
+        # Allocate budget — fractional shares (Charles Schwab Slices)
         recommendations = []
         total_allocated = 0
         priority = 1
-        
+        MIN_SHARES = 0.001  # minimum fractional share
+
         for ticker, score in sorted_tickers:
             price = prices.get(ticker, 0)
             if price == 0:
                 continue
-            
-            # Calculate how many shares we can buy
+
             remaining_budget = budget - total_allocated
-            shares = int(remaining_budget / price)
-            
-            if shares > 0:
-                cost = shares * price
+
+            # Always suggest at least top 3 even if budget is exhausted
+            if remaining_budget <= 0 and priority > 3:
+                break
+
+            if remaining_budget > 0:
+                shares = round(remaining_budget / price, 4)
+            else:
+                # For top-3 with no remaining budget, suggest $50 worth
+                shares = round(50.0 / price, 4)
+
+            if shares < MIN_SHARES:
+                shares = MIN_SHARES
+
+            cost = round(shares * price, 2)
+            if remaining_budget > 0:
                 total_allocated += cost
-                
-                # Generate reasoning
-                div_yield = dividends.get(ticker, {}).get("yield", 0)
-                pe_ratio = valuation.get(ticker, 0)  # valuation returns float directly
-                
-                reasoning = f"Score: {score:.2f}. "
-                if div_yield > 0:
-                    reasoning += f"Dividend yield: {div_yield*100:.2f}%. "
-                if pe_ratio > 0:
-                    reasoning += f"P/E ratio: {pe_ratio:.2f}. "
-                reasoning += "Strong fundamentals and good value."
-                
-                recommendations.append({
-                    "ticker": ticker,
-                    "action": "BUY",
-                    "shares": shares,
-                    "price": round(price, 2),
-                    "total_cost": round(cost, 2),
-                    "score": round(score, 2),
-                    "reasoning": reasoning,
-                    "priority": priority
-                })
-                priority += 1
-            
-            if total_allocated >= budget * 0.95:  # Use 95% of budget
+
+            div_yield = dividends.get(ticker, {}).get("yield", 0)
+            pe_ratio = valuation.get(ticker, 0)
+
+            reasoning = f"Score: {score:.2f}. "
+            if div_yield and div_yield > 0:
+                reasoning += f"Dividend yield: {div_yield*100:.2f}%. "
+            if pe_ratio and pe_ratio > 0:
+                reasoning += f"P/E ratio: {pe_ratio:.2f}. "
+            reasoning += "Fractional shares available via Schwab Slices."
+
+            recommendations.append({
+                "ticker": ticker,
+                "action": "BUY",
+                "shares": shares,
+                "price": round(price, 2),
+                "total_cost": cost,
+                "score": round(score, 2),
+                "reasoning": reasoning,
+                "priority": priority
+            })
+            priority += 1
+
+            if total_allocated >= budget * 0.95 and priority > 3:
                 break
         
         # Save recommendation run to database
